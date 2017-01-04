@@ -1,13 +1,6 @@
 # c_graphics_test
 
-Part autoconf test, part cairo test
+Simple GUI/graphics test with GTK3 and cairo
 
-1) aclocal
-
-2) autoconf
-
-3) automake --add-missing
-
-4) ./configure
-
-5) make
+# Build #
+`make`
