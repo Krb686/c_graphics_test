@@ -10,4 +10,4 @@ gtk_cairo_test: gtk_cairo_test.o
 
 clean:
 	rm -f *.o
-	rm -f $(BIN)
+	rm -f gtk_cairo_test
