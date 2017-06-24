@@ -1,8 +1,23 @@
+#include <cairo.h>
 #include <gtk/gtk.h>
 
-static void print_hello (GtkWidget *widget,
-                         gpointer  data) {
+static void do_drawing(cairo_t *);
 
+
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data){
+    do_drawing(cr);
+    return FALSE;
+}
+
+static void do_drawing(cairo_t *cr){
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 40.0);
+    cairo_move_to(cr, 10.0, 50.0);
+    cairo_show_text(cr, "Hello");
+}
+
+static void print_hello (GtkWidget *widget, gpointer  data) {
     g_print("Hello!\n");
 }
 
@@ -11,8 +26,7 @@ static void quit_activate(GtkWidget *Widget, gpointer user_data){
     g_application_quit(user_data);
 }
 
-static void activate (GtkApplication *app,
-                     gpointer        user_data) {
+static void activate (GtkApplication *app, gpointer user_data) {
 
     GtkWidget *window;
     GtkWidget *grid, *box, *box_main;
@@ -23,6 +37,7 @@ static void activate (GtkApplication *app,
     GtkWidget *toolbar;
     GtkWidget *icon_open;
     GtkWidget *text1;
+    GtkWidget *draw_area;
     GtkToolItem *toolbar_item_open;
 
 
@@ -57,14 +72,27 @@ static void activate (GtkApplication *app,
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), toolbar_item_open, 0);
 
 
-    GtkStyleContext *toolbar_style;
+    GtkStyleContext *toolbar_style_ctx;
     // style the toolbar
-    toolbar_style = gtk_widget_get_style_context(GTK_WIDGET(toolbar));
+    toolbar_style_ctx = gtk_widget_get_style_context(GTK_WIDGET(toolbar));
+    GtkCssProvider *toolbar_css = gtk_css_provider_new();
+    GFile *css_file = g_file_new_for_path("gtk_css");
+    gtk_css_provider_load_from_file(toolbar_css, css_file, NULL);
+
+    gtk_style_context_add_provider(toolbar_style_ctx, GTK_STYLE_PROVIDER(toolbar_css), 1);
+
+    // Drawing area
+    draw_area = gtk_drawing_area_new();
+    g_signal_connect(G_OBJECT(draw_area), "draw", G_CALLBACK(on_draw_event), NULL);
+    
 
     // Main box
     box_main = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-    text1 = gtk_text_view_new();
-    gtk_box_pack_start(GTK_BOX(box_main), text1, TRUE, TRUE, 2);
+
+    // Text area
+    //text1 = gtk_text_view_new();
+    //gtk_box_pack_start(GTK_BOX(box_main), text1, FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(box_main), draw_area, TRUE, TRUE, 2);
 
     // Box layout
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -73,11 +101,12 @@ static void activate (GtkApplication *app,
     gtk_box_pack_start(GTK_BOX(box), box_main, TRUE, TRUE, 3);
     gtk_container_add(GTK_CONTAINER(window), box);
 
+    
+
     gtk_widget_show_all(window);
 }
 
-int main (int  argc,
-          char **argv) {
+int main (int argc, char **argv) {
   GtkApplication *app;
   int status;
 
