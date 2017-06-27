@@ -18,8 +18,78 @@
 //
 
 
+typedef struct {
+    int x1, y1, x2, y2;
+    int sa1, sa2, ea1, ea2;
+    int endtype;
+} ConnectorStraight;
+
+typedef struct {
+    int x1, y1, x2, y2;
+    int c1x1, c1y1, c1x2, c1y2;
+    int c2x1, c2y1, c2x2, c2y2;
+} ConnectorCurve;
+
 
 static void update_drawing(cairo_t *);
+
+void connector_straight_new(cairo_t *cr, ConnectorStraight *ac, int x1, int y1, int x2, int y2, int endtype){
+    ac = malloc(sizeof(ConnectorStraight));
+    ac->x1=x1;
+    ac->x2=x2;
+    ac->y1=y1;
+    ac->y2=y2;
+
+    ac->endtype=endtype;
+
+    
+    cairo_move_to(cr, x1, y1);
+    cairo_line_to(cr, x2, y2);
+    cairo_stroke(cr);
+}
+
+void connector_curve_new(cairo_t *cr, ConnectorCurve *cc, int x1, int y1, int x2, int y2, int parallel_ends){
+    cc = malloc(sizeof(ConnectorCurve));
+    cc->x1 = x1;
+    cc->x2 = x2;
+    cc->y1 = y1;
+    cc->y2 = y2;
+
+    if(parallel_ends){
+        cc->c1x1 = x1;
+        cc->c1y1 = y1 + (y2-y1)/2;
+        cc->c1x2 = x1 + (x2-x1)/4;
+        cc->c1y2 = y1 + (y2-y1)/2;
+
+        cairo_move_to(cr, x1, y1);
+        cairo_curve_to(cr, cc->c1x1, cc->c1y1, cc->c1x2, cc->c1y2, x1+(x2-x1)/2, y1+(y2-y1)/2);
+        cairo_stroke(cr);
+
+        cc->c2x1 = x2;
+        cc->c2y1 = y1 + (y2 - y1) / 2;
+        cc->c2x2 = x2;
+        cc->c2y2 = y1 + (y2 - y1) / (4/3);
+
+        cairo_move_to(cr, x1+(x2-x1)/2, y1+(y2-y1)/2);
+        cairo_curve_to(cr, cc->c2x1, cc->c2y1, cc->c2x2, cc->c2y2, x2, y2);
+        cairo_stroke(cr);
+
+    } else {
+        cc->c1x1 = x1;
+        cc->c1y1 = y2;
+        cc->c1x2 = x1 + (x2 - x1) / 2;
+        cc->c1y2 = y2;
+
+        cc->c2x1=0;
+        cc->c2y1=0;
+        cc->c2x2=0;
+        cc->c2y2=0;
+
+        cairo_move_to(cr, x1, y1);
+        cairo_curve_to(cr, cc->c1x1, cc->c1y1, cc->c1x2, cc->c1y2, x2, y2);
+        cairo_stroke(cr);
+    }
+}
 
 static gboolean draw_handler(GtkWidget *widget, cairo_t *cr, gpointer user_data){
     update_drawing(cr);
@@ -79,9 +149,13 @@ static void update_drawing(cairo_t *cr){
     cairo_stroke_preserve(cr);
     cairo_fill(cr);
 
-    cairo_move_to(cr, 550, 300);
-    cairo_curve_to(cr, 550, 600, 750, 600, 785, 600);
-    cairo_stroke(cr);
+
+    ConnectorCurve *cc1, *cc2;
+    connector_curve_new(cr, cc1, 550, 300, 785, 600, 0);
+    connector_curve_new(cr, cc2, 550, 300, 800, 585, 1);
+
+    ConnectorStraight *ac;
+    connector_straight_new(cr, ac, 50, 50, 350, 350, 1);
 }
 
 static gint handle_opts(GtkApplication *app, GVariantDict *opts, gpointer user_data){
